@@ -18,28 +18,31 @@ llm = ChatGroq(
 
 itinerary_prompt = ChatPromptTemplate.from_messages([
     ("system", 
-        "You are a structured travel assistant. Always generate a well-formatted {travel_duration}-day travel itinerary for {city}."
-        "\nThe response **must follow** this structure:"
+        "You are a structured travel assistant. Always generate a {travel_duration}-day travel itinerary for {city}, ensuring the output is formatted as follows:"
         "\n\n---"
-        "\n**Day X:**"
-        "\n- **Weather:** (e.g., Sunny, 28°C)"
-        "\n- **Places to Visit:** (List 1-2 attractions per day)"
-        "\n- **Food Options:**"
-        "\n  - *Breakfast:* (Dish) at (Restaurant) (Price in ₹)"
-        "\n  - *Lunch:* (Dish) at (Restaurant) (Price in ₹)"
-        "\n  - *Dinner:* (Dish) at (Restaurant) (Price in ₹)"
-        "\n- **Stay Recommendation:** (Hotel Name) (Price per night in ₹)"
-        "\n\nAt the end, include:"
-        "\n- **Total Estimated Cost:** ₹ (Breakdown of stay, food, transport)"
-        "\n- **Local Delicacies to Try:** (List famous dishes of the destination)"
+        "\n*Day 1:*"
+        "\n- **Weather:** (Weather condition, Temperature in °C)"
+        "\n- **Visit:** (List 1-2 attractions)"
+        "\n- **Food:**"
+        "\n  - *Breakfast:* (Dish) at (Restaurant) (₹Price)"
+        "\n  - *Lunch:* (Dish) at (Restaurant) (₹Price)"
+        "\n  - *Dinner:* (Dish) at (Restaurant) (₹Price)"
+        "\n- **Stay:** (Hotel Name or similar) (₹Price per night)"
+        "\n\n*Day 2:*"
+        "\n- Repeat the same format for each day..."
         "\n\n---"
-        "\nThis format **must be maintained** regardless of parameters."
+        "\nAt the end, always include:"
+        "\n- **Total estimated cost for the {travel_duration}-day trip:** ₹ (Breakdown of stay, food, and transport)"
+        "\n- **Local delicacies to try:** (List famous dishes of {city})"
+        "\n\n---"
+        "\n**Maintain this format consistently, regardless of the inputs provided.**"
         "\n- **User Interests:** {interests}"
         "\n- **Average Budget:** ₹{avg_budget}"
         "\n- **Food Preference:** {food_prefference}"
     ),
     ("human", "Generate a structured itinerary for my trip.")
 ])
+
 
 
 # I need to create users obviously
@@ -75,36 +78,46 @@ class TravelRequestCreateAPIView(APIView):
 
         # Groq AI is cool 
         state = {
-        "messages": [HumanMessage(content=(
-            f"Generate a structured {travel_duration}-day travel itinerary for {city}."
-            f"\nThe response format must always be consistent, structured as follows:"
-            f"\n\n---"
-            f"\n**Day X:**"
-            f"\n- **Weather:** (e.g., Sunny, 28°C)"
-            f"\n- **Places to Visit:** (List 1-2 attractions per day)"
-            f"\n- **Food Options:**"
-            f"\n  - *Breakfast:* (Dish) at (Restaurant) (Price in ₹)"
-            f"\n  - *Lunch:* (Dish) at (Restaurant) (Price in ₹)"
-            f"\n  - *Dinner:* (Dish) at (Restaurant) (Price in ₹)"
-            f"\n- **Stay Recommendation:** (Hotel Name) (Price per night in ₹)"
-            f"\n\nAt the end, include:"
-            f"\n- **Total Estimated Cost:** ₹ (Breakdown of stay, food, transport)"
-            f"\n- **Local Delicacies to Try:** (List famous dishes of the destination)"
-            f"\n\n---"
-            f"\nThe itinerary must be customized based on:"
-            f"\n- **User Interests:** {', '.join(interests)}"
-            f"\n- **Food Preference:** {food_prefference}"
-            f"\n- **Average Budget:** ₹{avg_budget}"
-            f"\n- **Travel Duration:** {travel_duration} days"
-            f"\n\n Ensure the format remains consistent for all responses."
-        ))],
-        "city": city,
-        "interests": interests,
-        "avg_budget": avg_budget,
-        "food_prefference": food_prefference,
-        "itinerary": "",
-        "weather": ""
+    "messages": [HumanMessage(content=(
+        f"Generate a structured {travel_duration}-day travel itinerary for {city}."
+        f"\n\nThe response **must always** follow this exact format:"
+        f"\n---"
+        f"\n*Day 1:*"
+        f"\n- **Weather:** (e.g., Partly Cloudy, 25°C)"
+        f"\n- **Visit:** (1-2 attractions per day)"
+        f"\n- **Food:**"
+        f"\n  - *Breakfast:* (Dish) at (Restaurant) (₹Price)"
+        f"\n  - *Lunch:* (Dish) at (Restaurant) (₹Price)"
+        f"\n  - *Dinner:* (Dish) at (Restaurant) (₹Price)"
+        f"\n- **Stay:** (Hotel Name or similar) (₹Price per night)"
+        f"\n\n*Day 2:*"
+        f"\n- **Weather:** (e.g., Sunny, 28°C)"
+        f"\n- **Visit:** (1-2 attractions per day)"
+        f"\n- **Food:**"
+        f"\n  - *Breakfast:* (Dish) at (Restaurant) (₹Price)"
+        f"\n  - *Lunch:* (Dish) at (Restaurant) (₹Price)"
+        f"\n  - *Dinner:* (Dish) at (Restaurant) (₹Price)"
+        f"\n- **Stay:** (Hotel Name or similar) (₹Price per night)"
+        f"\n\n(Repeat this format for all days...)"
+        f"\n---"
+        f"\nAt the end, **always include:**"
+        f"\n- **Total Estimated Cost for {travel_duration} days:** ₹ (Breakdown of stay, food, transport)"
+        f"\n- **Local Delicacies to Try:** (List of traditional dishes from {city})"
+        f"\n\n---"
+        f"\nEnsure that **every response strictly follows this format**, without any introduction or summary."
+        f"\n- **User Interests:** {', '.join(interests)}"
+        f"\n- **Food Preference:** {food_prefference}"
+        f"\n- **Average Budget:** ₹{avg_budget}"
+        f"\n- **Travel Duration:** {travel_duration} days"
+    ))],
+    "city": city,
+    "interests": interests,
+    "avg_budget": avg_budget,
+    "food_prefference": food_prefference,
+    "itinerary": "",
+    "weather": ""
     }
+
 
 
         response = llm.invoke(itinerary_prompt.format_messages(city=city, interests=','.join(interests), travel_duration=travel_duration,avg_budget=avg_budget,food_prefference=food_prefference))
