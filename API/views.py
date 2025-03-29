@@ -17,10 +17,30 @@ llm = ChatGroq(
 )
 
 itinerary_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful travel assistant. Create a {travel_duration} day trip itinerary along with daily weather without any introduction statement for {city} based on the user's interests: {interests} average budget {avg_budget} and food prefference {food_prefference}."
-    "Provide a brief, bulleted itinerary." "Also suggest local restaurants and delicacies."),
-    ("human", "Create an itinerary for my multiple days trip.")
+    ("system", 
+        "You are a structured travel assistant. Always generate a well-formatted {travel_duration}-day travel itinerary for {city}."
+        "\nThe response **must follow** this structure:"
+        "\n\n---"
+        "\n**Day X:**"
+        "\n- **Weather:** (e.g., Sunny, 28°C)"
+        "\n- **Places to Visit:** (List 1-2 attractions per day)"
+        "\n- **Food Options:**"
+        "\n  - *Breakfast:* (Dish) at (Restaurant) (Price in ₹)"
+        "\n  - *Lunch:* (Dish) at (Restaurant) (Price in ₹)"
+        "\n  - *Dinner:* (Dish) at (Restaurant) (Price in ₹)"
+        "\n- **Stay Recommendation:** (Hotel Name) (Price per night in ₹)"
+        "\n\nAt the end, include:"
+        "\n- **Total Estimated Cost:** ₹ (Breakdown of stay, food, transport)"
+        "\n- **Local Delicacies to Try:** (List famous dishes of the destination)"
+        "\n\n---"
+        "\nThis format **must be maintained** regardless of parameters."
+        "\n- **User Interests:** {interests}"
+        "\n- **Average Budget:** ₹{avg_budget}"
+        "\n- **Food Preference:** {food_prefference}"
+    ),
+    ("human", "Generate a structured itinerary for my trip.")
 ])
+
 
 # I need to create users obviously
 class UserCreateAPIView(APIView):
@@ -55,14 +75,37 @@ class TravelRequestCreateAPIView(APIView):
 
         # Groq AI is cool 
         state = {
-            "messages": [HumanMessage(content=f"Create an itinerary for  {travel_duration} day trip without any introduction statement suggesting one or two places per day to {city} based on the following interests: {', '.join(interests)} and providing food options and budget accordingly.The food options should be the famous delicacies of that place and mention the restaurant too.*Day 1:* Weather: Partly Cloudy, 25°C Visit: Rourkela Steel Plant, Deer Park, and Jubilee Park* Food:   * Breakfast: Misal Pav at Mayur Restaurant (₹100)  * Lunch: Veg Thali at Hotel Anand (₹200)  * Dinner: Dalma and Pakhal at Nisarg Restaurant (₹250)* Stay: Hotel Anand or similar (₹1500 per night)*Day 2:* Weather: Sunny, 28°C Visit: Mandira Dam, Hanuman Vatika, and Rourkela Market* Food:   * Breakfast: Poha and Jalebi at a local stall (₹50)  * Lunch: Veg Biryani at Tandoor Restaurant (₹250)  * Dinner: Kosha Mangsho and Luchi at Bengali Restaurant (₹300, note: can be replaced with veg option)* Stay: Hotel Anand or similar (₹1500 per night)*Day 3:* Weather: Cloudy, 22°C Visit: Vedvyas Temple, and Ghoghar Waterfall* Food:   * Breakfast: Idli and Dosa at South Indian Restaurant (₹150)  * Lunch: Veg Sandwich and Salad at Cafe Coffee Day (₹200)  * Dinner: Chappan Bhog at a local restaurant (₹250)* Stay: Hotel Anand or similar (₹1500 per night)*Day 4:* Weather: Partly Cloudy, 25°C Visit: Indira Gandhi Park, and Rourkela Railway Station* Food:   * Breakfast: Paratha and Sabzi at a local stall (₹100)  * Lunch: Veg Pizza at Pizza Hut (₹300)  * Dinner: Gajar Ka Halwa at a local sweet shop (₹150)* Stay: Check-out from hotelTotal estimated cost for the 4-day trip: ₹14,500 Local delicacies to try: * Dalma* Pakhal* Chappan Bhog* Gajar Ka Halwa* Jalebi* Misal Pav. Use this format.")],
-            "city": city,
-            "interests": interests,
-            "avg_budget":avg_budget,
-            "food_prefference":food_prefference,
-            "itinerary": "",
-            "weather":""
-        }
+        "messages": [HumanMessage(content=(
+            f"Generate a structured {travel_duration}-day travel itinerary for {city}."
+            f"\nThe response format must always be consistent, structured as follows:"
+            f"\n\n---"
+            f"\n**Day X:**"
+            f"\n- **Weather:** (e.g., Sunny, 28°C)"
+            f"\n- **Places to Visit:** (List 1-2 attractions per day)"
+            f"\n- **Food Options:**"
+            f"\n  - *Breakfast:* (Dish) at (Restaurant) (Price in ₹)"
+            f"\n  - *Lunch:* (Dish) at (Restaurant) (Price in ₹)"
+            f"\n  - *Dinner:* (Dish) at (Restaurant) (Price in ₹)"
+            f"\n- **Stay Recommendation:** (Hotel Name) (Price per night in ₹)"
+            f"\n\nAt the end, include:"
+            f"\n- **Total Estimated Cost:** ₹ (Breakdown of stay, food, transport)"
+            f"\n- **Local Delicacies to Try:** (List famous dishes of the destination)"
+            f"\n\n---"
+            f"\nThe itinerary must be customized based on:"
+            f"\n- **User Interests:** {', '.join(interests)}"
+            f"\n- **Food Preference:** {food_prefference}"
+            f"\n- **Average Budget:** ₹{avg_budget}"
+            f"\n- **Travel Duration:** {travel_duration} days"
+            f"\n\n Ensure the format remains consistent for all responses."
+        ))],
+        "city": city,
+        "interests": interests,
+        "avg_budget": avg_budget,
+        "food_prefference": food_prefference,
+        "itinerary": "",
+        "weather": ""
+    }
+
 
         response = llm.invoke(itinerary_prompt.format_messages(city=city, interests=','.join(interests), travel_duration=travel_duration,avg_budget=avg_budget,food_prefference=food_prefference))
 
@@ -84,13 +127,14 @@ class TravelRequestCreateAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 @api_view(['DELETE'])
-def delete_itinerary(request, id):
+def delete_itinerary(request,id):
     try:
-        itinerary = TravelRequestSerializer.objects.get(id=id)
-        itinerary.delete()
-        return Response({"message": "Itinerary deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        itinerary = TravelRequest.objects.get(id = id)
     except TravelRequest.DoesNotExist:
-        return Response({"error": "Itinerary not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status = status.HTTP_404_NOT_FOUND)
+    itinerary.delete()
+    return Response(status = status.HTTP_204_NO_CONTENT)
+        
         
 
 @api_view(['GET'])   
