@@ -16,6 +16,8 @@ llm = ChatGroq(
     model_name="llama-3.3-70b-versatile"
 )
 
+
+
 itinerary_prompt = ChatPromptTemplate.from_messages([
     ("system", 
         "You are a structured travel assistant. Always generate a {travel_duration}-day travel itinerary for {city}, ensuring the output is formatted as follows:"
@@ -45,9 +47,17 @@ itinerary_prompt = ChatPromptTemplate.from_messages([
 
 hotel_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a structured accomodation assistant. Identify all places in the {itinerary_entered} and list all hotels in those places along with the price in ascending order of price"),
-    ("human","Generate all hotels from cheapest to expensive")
+     "You are a structured accommodation assistant. Identify all places in the {itinerary_entered} and provide a list of hotels for each place. "
+     "For each location, list all hotels along with their prices (sorted from cheapest to most expensive) and reviews."),
+    ("human",
+     "Generate a structured list of hotels for each place in the itinerary. "
+     "Format the response as follows:\n"
+     "- **Place Name**\n"
+     "  - Hotel Name: Price, Review\n"
+     "  - Hotel Name: Price, Review\n"
+     "Ensure the hotels are grouped under their respective places and sorted by price in ascending order.")
 ])
+
 
 
 # I need to create users obviously
@@ -145,14 +155,15 @@ class TravelRequestCreateAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 @api_view(['DELETE'])
-def delete_itinerary(request,id):
+def delete_itinerary(request, user, itinerary_id):
     try:
-        itinerary = TravelRequest.objects.get(id = id)
+        itinerary = TravelRequest.objects.get(id=itinerary_id, user=user)
     except TravelRequest.DoesNotExist:
-        return Response(status = status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Itinerary not found for this user"}, status=status.HTTP_404_NOT_FOUND)
+
     itinerary.delete()
-    return Response(status = status.HTTP_204_NO_CONTENT)
-        
+    return Response({"message": "Itinerary deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
 @api_view(['POST'])
 def get_hotels_by_itinerary(request):
     itinerary_entered = request.data.get("itinerary")
@@ -166,8 +177,8 @@ def get_hotels_by_itinerary(request):
         "messages": [
             HumanMessage(
                 content=(
-                    f"List all the hotels present in the places given in {itinerary_entered} "
-                    "and list them in ascending order of price."
+                    f"List all the hotels present in the places given in {itinerary_entered}, "
+                    "including their reviews and prices, sorted in ascending order of price."
                 )
             )
         ]
