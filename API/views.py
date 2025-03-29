@@ -43,6 +43,11 @@ itinerary_prompt = ChatPromptTemplate.from_messages([
     ("human", "Generate a structured itinerary for my trip.")
 ])
 
+hotel_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+     "You are a structured accomodation assistant. Identify all places in the {itinerary_entered} and list all hotels in those places along with the price in ascending order of price"),
+    ("human","Generate all hotels from cheapest to expensive")
+])
 
 
 # I need to create users obviously
@@ -148,7 +153,21 @@ def delete_itinerary(request,id):
     itinerary.delete()
     return Response(status = status.HTTP_204_NO_CONTENT)
         
-        
+@api_view(['GET'])
+def get_hotels_by_itinerary(request):
+    itinerary_entered = request.GET.get("itinerary")
+    user_id = request.GET.get("user_id")
+    itinerary_id = request.GET.get("itinerary_id")
+
+    #Groc AI help please
+    state = {
+        "messages":[HumanMessage(content=("List all the hotels present in the places given in the {itinerary_entered} and list them. "
+        "list should be structured in the ascending order of price"))]
+    }
+    Response = llm.invoke(hotel_prompt.format_messages(itinerary_entered))
+    Hotels = Response.content
+
+
 
 @api_view(['GET'])   
 def get_itinerary_by_user(request):

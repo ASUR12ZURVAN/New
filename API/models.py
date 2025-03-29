@@ -58,3 +58,8 @@ class TravelRequest(models.Model):
 
     def __str__(self):
         return f"TravelRequest for {self.user.name} to {self.city} on {self.travel_date} at {self.travel_duration}"
+
+class Hotel_List(models.Model):
+    user_id = models.ForeignKey(TravelRequest,on_delete=models.CASCADE)
+    itinerary = models.TextField()
+    itinerary_id = models.IntegerField()
