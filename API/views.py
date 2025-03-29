@@ -55,7 +55,7 @@ class TravelRequestCreateAPIView(APIView):
 
         # Groq AI is cool 
         state = {
-            "messages": [HumanMessage(content=f"Create an itinerary for  {travel_duration} day trip without any introduction statement suggesting one or two places per day to {city} based on the following interests: {', '.join(interests)} and providing food options and budget accordingly.The food options should be the famous delicacies of that place and mention the restaurant too.")],
+            "messages": [HumanMessage(content=f"Create an itinerary for  {travel_duration} day trip without any introduction statement suggesting one or two places per day to {city} based on the following interests: {', '.join(interests)} and providing food options and budget accordingly.The food options should be the famous delicacies of that place and mention the restaurant too.*Day 1:* Weather: Partly Cloudy, 25°C Visit: Rourkela Steel Plant, Deer Park, and Jubilee Park* Food:   * Breakfast: Misal Pav at Mayur Restaurant (₹100)  * Lunch: Veg Thali at Hotel Anand (₹200)  * Dinner: Dalma and Pakhal at Nisarg Restaurant (₹250)* Stay: Hotel Anand or similar (₹1500 per night)*Day 2:* Weather: Sunny, 28°C Visit: Mandira Dam, Hanuman Vatika, and Rourkela Market* Food:   * Breakfast: Poha and Jalebi at a local stall (₹50)  * Lunch: Veg Biryani at Tandoor Restaurant (₹250)  * Dinner: Kosha Mangsho and Luchi at Bengali Restaurant (₹300, note: can be replaced with veg option)* Stay: Hotel Anand or similar (₹1500 per night)*Day 3:* Weather: Cloudy, 22°C Visit: Vedvyas Temple, and Ghoghar Waterfall* Food:   * Breakfast: Idli and Dosa at South Indian Restaurant (₹150)  * Lunch: Veg Sandwich and Salad at Cafe Coffee Day (₹200)  * Dinner: Chappan Bhog at a local restaurant (₹250)* Stay: Hotel Anand or similar (₹1500 per night)*Day 4:* Weather: Partly Cloudy, 25°C Visit: Indira Gandhi Park, and Rourkela Railway Station* Food:   * Breakfast: Paratha and Sabzi at a local stall (₹100)  * Lunch: Veg Pizza at Pizza Hut (₹300)  * Dinner: Gajar Ka Halwa at a local sweet shop (₹150)* Stay: Check-out from hotelTotal estimated cost for the 4-day trip: ₹14,500 Local delicacies to try: * Dalma* Pakhal* Chappan Bhog* Gajar Ka Halwa* Jalebi* Misal Pav. Use this format.")],
             "city": city,
             "interests": interests,
             "avg_budget":avg_budget,
@@ -82,6 +82,16 @@ class TravelRequestCreateAPIView(APIView):
 
         serializer = TravelRequestSerializer(travel_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+@api_view(['DELETE'])
+def delete_itinerary(request, id):
+    try:
+        itinerary = TravelRequestSerializer.objects.get(id=id)
+        itinerary.delete()
+        return Response({"message": "Itinerary deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    except TravelRequest.DoesNotExist:
+        return Response({"error": "Itinerary not found"}, status=status.HTTP_404_NOT_FOUND)
+        
 
 @api_view(['GET'])   
 def get_itinerary_by_user(request):
