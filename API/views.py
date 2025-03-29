@@ -9,19 +9,20 @@ from langchain_core.messages import HumanMessage, AIMessage
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 
-# Initialize the ChatGroq instance for generating itineraries
+# Groq help me out
 llm = ChatGroq(
     temperature=0,
-    groq_api_key="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",  # Replace with your Groq API key
+    groq_api_key="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",  
     model_name="llama-3.3-70b-versatile"
 )
 
 itinerary_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful travel assistant. Create a day trip itinerary for {city} based on the user's interests: {interests}. Provide a brief, bulleted itinerary."),
-    ("human", "Create an itinerary for my day trip.")
+    ("system", "You are a helpful travel assistant. Create a {travel_duration} day trip itinerary along with daily weather without any introduction statement for {city} based on the user's interests: {interests} average budget {avg_budget} and food prefference {food_prefference}."
+    "Provide a brief, bulleted itinerary." "Also suggest local restaurants and delicacies."),
+    ("human", "Create an itinerary for my multiple days trip.")
 ])
 
-# Create User API View
+# I need to create users obviously
 class UserCreateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = UserSerializer(data=request.data)
@@ -31,70 +32,69 @@ class UserCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
-        # Fetch all users from the User model
+        # A general fetch call
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # TravelRequest Create API View
 class TravelRequestCreateAPIView(APIView):
-    def post(self, request, *args, **kwargs):
-        # Retrieve the user ID from the request data
+    def post(self, request, *args,**kwargs):
         user_id = request.data.get('user_id')
         
-        # Ensure the user exists before proceeding
-        
 
-        # Get city, interests, travel date, and time from the request data
         city = request.data.get('city')
         interests = request.data.get('interests')
         travel_date = request.data.get('travel_date')
-        travel_time = request.data.get('travel_time')
+        travel_duration = request.data.get('travel_duration')
+        avg_budget = request.data.get('avg_budget')
+        food_prefference = request.data.get('food_prefference')
 
-        if not city or not interests or not travel_date or not travel_time:
-            return Response({"error": "City, interests, travel date, and travel time are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not city or not interests or not travel_date or not travel_duration:
+            return Response({"error": "City, interests, travel date, and travel duration are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate itinerary using Groq AI
+        # Groq AI is cool 
         state = {
-            "messages": [HumanMessage(content=f"Create an itinerary for a day trip to {city} based on the following interests: {', '.join(interests)}")],
+            "messages": [HumanMessage(content=f"Create an itinerary for  {travel_duration} day trip without any introduction statement suggesting one or two places per day to {city} based on the following interests: {', '.join(interests)} and providing food options and budget accordingly.The food options should be the famous delicacies of that place and mention the restaurant too.")],
             "city": city,
             "interests": interests,
-            "itinerary": ""
+            "avg_budget":avg_budget,
+            "food_prefference":food_prefference,
+            "itinerary": "",
+            "weather":""
         }
 
-        # Call the AI model to generate itinerary
-        response = llm.invoke(itinerary_prompt.format_messages(city=city, interests=','.join(interests)))
-        itinerary = response.content  # Get the AI-generated itinerary
+        response = llm.invoke(itinerary_prompt.format_messages(city=city, interests=','.join(interests), travel_duration=travel_duration,avg_budget=avg_budget,food_prefference=food_prefference))
 
-        # Create the TravelRequest instance with AI-generated itinerary
+        itinerary = response.content  
+
+
         travel_request = TravelRequest.objects.create(
-            user=user_id,  # Associate the travel request with the user object
+            user=user_id,  
             city=city,
             interests=interests,
             travel_date=travel_date,
-            travel_time=travel_time,
-            itinerary=itinerary  # Save the AI-generated itinerary
+            travel_duration=travel_duration,
+            avg_budget = avg_budget,
+            food_prefference = food_prefference,
+            itinerary=itinerary  # Need to save in database
         )
 
-        # Serialize the TravelRequest instance
         serializer = TravelRequestSerializer(travel_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])   
 def get_itinerary_by_user(request):
         user_id = request.GET.get('user_id')
-        # Fetch all TravelRequests for the given user ID
         travel_requests = TravelRequest.objects.filter(user=user_id)
-        
-        # Check if there are any travel requests
         if not travel_requests:
             return Response({"error": "No travel requests found for the given user."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Serialize the travel requests
+        # Serialization is important
         serializer = TravelRequestSerializer(travel_requests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-# API view to get a user's travel requests
+# this one would give travel requests
 @api_view(['GET'])
 def get_user_travel_requests(request, user_id):
     try:
@@ -104,15 +104,15 @@ def get_user_travel_requests(request, user_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-# API view to get all users (No need for get_users method inside TravelRequestCreateAPIView)
+
+
 @api_view(['GET'])
 def get_users(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
-# API view to create a user
+
 @api_view(['POST'])
 def create_user(request):
     serializer = UserSerializer(data=request.data)
@@ -122,7 +122,7 @@ def create_user(request):
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# API view to delete a user by pk
+
 @api_view(['DELETE'])
 def delete_user(request, pk):
     try:
@@ -133,7 +133,7 @@ def delete_user(request, pk):
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
-# API view to update a user
+
 @api_view(['PUT'])
 def put_user(request, pk):
     try:
