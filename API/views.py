@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 # Groq help me out
 llm = ChatGroq(
     temperature=0,
-    groq_api_key="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",  
+    groq_api_key="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",  
     model_name="llama-3.3-70b-versatile"
 )
 
@@ -169,6 +169,8 @@ class TravelRequestCreateAPIView(APIView):
         serializer = TravelRequestSerializer(travel_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+###############################################
+    
 @api_view(['DELETE'])
 def delete_itinerary(request, user, itinerary_id):
     try:
@@ -178,6 +180,8 @@ def delete_itinerary(request, user, itinerary_id):
 
     itinerary.delete()
     return Response({"message": "Itinerary deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+###############################################
 
 @api_view(['POST'])
 def get_hotels_by_itinerary(request):
@@ -204,6 +208,8 @@ def get_hotels_by_itinerary(request):
 
     return Response({"hotels": hotels})
 
+#########################################################
+
 
 @api_view(['POST'])
 def get_restaurants(request):
@@ -227,6 +233,7 @@ def get_restaurants(request):
 
     return Response({"restaurnats":restaurants})
 
+############################################################
 
 @api_view(['GET'])   
 def get_itinerary_by_user(request):
@@ -239,6 +246,8 @@ def get_itinerary_by_user(request):
         serializer = TravelRequestSerializer(travel_requests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+#######################################################
+
 # this one would give travel requests
 @api_view(['GET'])
 def get_user_travel_requests(request, user_id):
@@ -250,7 +259,8 @@ def get_user_travel_requests(request, user_id):
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    
+
+######################################################
 
 @api_view(['GET'])
 def get_users(request):
@@ -258,6 +268,7 @@ def get_users(request):
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
+#####################################################
 
 @api_view(['POST'])
 def create_user(request):
@@ -268,6 +279,7 @@ def create_user(request):
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+####################################################
 
 @api_view(['DELETE'])
 def delete_user(request, pk):
@@ -279,6 +291,7 @@ def delete_user(request, pk):
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+####################################################
 
 @api_view(['PUT'])
 def put_user(request, pk):
@@ -292,3 +305,4 @@ def put_user(request, pk):
         serializer.save()
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
