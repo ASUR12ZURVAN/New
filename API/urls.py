@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import *
 
-
+#all urls routed properly (maybe i guess)
 urlpatterns = [
     path('users/',get_users,name = "get-users"),
     path('users/create',create_user,name = "create-user"),
