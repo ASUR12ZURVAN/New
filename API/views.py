@@ -47,14 +47,14 @@ itinerary_prompt = ChatPromptTemplate.from_messages([
 
 hotel_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a structured accommodation assistant. Identify all places in the {itinerary_entered} and provide a list of hotels for each place. "
+     "You are a structured accommodation assistant. Identify all places in the {itinerary_entered} and provide a list of hotels along with booking link for each place. "
      "For each location, list all hotels along with their prices (sorted from cheapest to most expensive) and reviews."),
     ("human",
      "Generate a structured list of hotels for each place in the itinerary. "
      "Format the response as follows:\n"
      "- **Place Name**\n"
-     "  - Hotel Name: Price, Review\n"
-     "  - Hotel Name: Price, Review\n"
+     "  - Hotel Name: Price, Review, Official Website Link\n"
+     "  - Hotel Name: Price, Review, Official Website Link\n"
      "Ensure the hotels are grouped under their respective places and sorted by price in ascending order.")
 ])
 
@@ -192,7 +192,7 @@ def get_hotels_by_itinerary(request):
         "messages": [
             HumanMessage(
                 content=(
-                    f"List all the hotels present in the places given in {itinerary_entered}, "
+                    f"List all the hotels present in the places given in {itinerary_entered} along with their booking link, "
                     "including their reviews and prices, sorted in ascending order of price."
                 )
             )
