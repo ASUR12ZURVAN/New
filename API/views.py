@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 # Groq help me out
 llm = ChatGroq(
     temperature=0,
-    groq_api_key="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",  
+    groq_api_key="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",  
     model_name="llama-3.3-70b-versatile"
 )
 
