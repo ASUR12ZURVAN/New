@@ -35,7 +35,7 @@ itinerary_prompt = ChatPromptTemplate.from_messages([
         "\n\n---"
         "\nAt the end, always include:"
         "\n- **Total estimated cost for the {travel_duration}-day trip:** ₹ (Breakdown of stay, food, and transport)"
-        "\n- **Local delicacies to try:** (List famous dishes of {city})"
+        "\n- **Local delicacies to try as per the food prefference:** (List famous dishes of {city})"
         "\n\n---"
         "\n**Maintain this format consistently, regardless of the inputs provided.**"
         "\n- **User Interests:** {interests}"
@@ -56,6 +56,16 @@ hotel_prompt = ChatPromptTemplate.from_messages([
      "  - Hotel Name: Price, Review\n"
      "  - Hotel Name: Price, Review\n"
      "Ensure the hotels are grouped under their respective places and sorted by price in ascending order.")
+])
+
+places_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+     "You are a skilled places identifier. Identify all places in the {itinerary_entered} to visit except the main visiting place."
+    ),
+    (
+        "human",
+        "Generate and list all the visiting places mentioned in the itinerary"
+    )
 ])
 
 
@@ -177,14 +187,14 @@ def get_hotels_by_itinerary(request):
         "messages": [
             HumanMessage(
                 content=(
-                    f"List all the hotels present in the places given in {itinerary_entered}, "
+                    f"List all the hotels and restaurants present in the places given in {itinerary_entered}, "
                     "including their reviews and prices, sorted in ascending order of price."
                 )
             )
         ]
     }
 
-    response = llm.invoke(state["messages"])  # Ensure this works correctly
+    response = llm.invoke(hotel_prompt.format_messages(itinerary_entered = itinerary_entered))  # Ensure this works correctly
     hotels = response.content if response else "No hotels found."
 
     return Response({"hotels": hotels})
@@ -213,6 +223,7 @@ def get_user_travel_requests(request, user_id):
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    
 
 @api_view(['GET'])
 def get_users(request):
