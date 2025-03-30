@@ -58,13 +58,18 @@ hotel_prompt = ChatPromptTemplate.from_messages([
      "Ensure the hotels are grouped under their respective places and sorted by price in ascending order.")
 ])
 
-places_prompt = ChatPromptTemplate.from_messages([
+restaurant_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a skilled places identifier. Identify all places in the {itinerary_entered} to visit except the main visiting place."
+     "You are a skilled restaurant finder. You need to find restaurants for user having {food_prefferences} in visiting places given in {itinerary_entered}"
     ),
     (
         "human",
-        "Generate and list all the visiting places mentioned in the itinerary"
+        "Generate and list all the restaurants of my food preference present in visiting places mentioned in the itinerary"
+        "Format the response as follows:\n"
+        "- **Place Name**\n"
+        "  - Restaurant Name: Price, Review\n"
+        "  - Restaurant Name: Price, Review\n"
+        "Ensure the restaurants are grouped under their respective places and sorted by price in ascending order."
     )
 ])
 
@@ -187,7 +192,7 @@ def get_hotels_by_itinerary(request):
         "messages": [
             HumanMessage(
                 content=(
-                    f"List all the hotels and restaurants present in the places given in {itinerary_entered}, "
+                    f"List all the hotels present in the places given in {itinerary_entered}, "
                     "including their reviews and prices, sorted in ascending order of price."
                 )
             )
@@ -199,6 +204,28 @@ def get_hotels_by_itinerary(request):
 
     return Response({"hotels": hotels})
 
+
+@api_view(['POST'])
+def get_restaurants(request):
+    food_prefferences = request.data.get('food_prefferences')
+    itinerary_entered = request.data.get('itinerary')
+
+    if not food_prefferences or not itinerary_entered:
+        return Response({"error":"Food preferences or itinerary not entered"},status = status.HTTP_404_NOT_FOUND)
+    state = {
+        "messages": [
+            HumanMessage(
+                content=(
+                    f"List all the restaurants present in the places given in {itinerary_entered} according to {food_prefferences}, "
+                    "including their reviews and prices, sorted in ascending order of price."
+                )
+            )
+        ]
+    }
+    response = llm.invoke(restaurant_prompt.format_messages(itinerary_entered = itinerary_entered,food_prefferences = food_prefferences))
+    restaurants = response.content if response else "No restaurants found"
+
+    return Response({"restaurnats":restaurants})
 
 
 @api_view(['GET'])   

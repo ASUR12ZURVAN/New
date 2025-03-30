@@ -12,4 +12,5 @@ urlpatterns = [
     path('user/put',put_user,name = "put-user"),
     path('delete_itinerary/<str:user>/<int:itinerary_id>/', delete_itinerary, name='delete_itinerary'),
     path('get_hotel_by_itinerary/', get_hotels_by_itinerary, name='Get_Hotels'),
+    path('get_restaurants/',get_restaurants,name = 'GET_Restaurants')
 ]
